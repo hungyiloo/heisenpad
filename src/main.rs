@@ -17,11 +17,13 @@ use warp::{
 /// Our global unique user id counter.
 static NEXT_USER_ID: AtomicUsize = AtomicUsize::new(1);
 
+type User = (String, usize);
+
 /// Our state of currently connected users.
 ///
 /// - Key is their id
 /// - Value is a sender of `warp::ws::Message`
-type Users = Arc<RwLock<HashMap<(String, usize), mpsc::UnboundedSender<Message>>>>;
+type Users = Arc<RwLock<HashMap<User, mpsc::UnboundedSender<Message>>>>;
 
 #[tokio::main]
 async fn main() -> Result<(), IoError> {
@@ -79,7 +81,8 @@ async fn user_connected(ws: WebSocket, my_channel: String, users: Users) {
     });
 
     // Save the sender in our list of connected users.
-    users.write().await.insert((my_channel.clone(), my_id), tx);
+    let user = (my_channel.clone(), my_id);
+    users.write().await.insert(user.clone(), tx);
 
     // Return a `Future` that is basically a state machine managing
     // this specific user's connection.
@@ -94,15 +97,15 @@ async fn user_connected(ws: WebSocket, my_channel: String, users: Users) {
                 break;
             }
         };
-        user_message(my_id, &my_channel, msg, &users).await;
+        user_message(&user, msg, &users).await;
     }
 
     // user_ws_rx stream will keep processing as long as the user stays
     // connected. Once they disconnect, then...
-    user_disconnected(my_id, &my_channel, &users).await;
+    user_disconnected(&user, &users).await;
 }
 
-async fn user_message(my_id: usize, my_channel: &str, msg: Message, users: &Users) {
+async fn user_message(me: &User, msg: Message, users: &Users) {
     // Skip any non-Text messages...
     let msg = if let Ok(s) = msg.to_str() {
         s
@@ -110,12 +113,11 @@ async fn user_message(my_id: usize, my_channel: &str, msg: Message, users: &User
         return;
     };
 
-    let new_msg = format!("<User#{}>: {}", my_id, msg);
-
     // New message from this user, send it to everyone else (except same uid)...
+    let (my_channel, my_id) = me;
     for ((channel, uid), tx) in users.read().await.iter() {
-        if my_id != *uid && my_channel == channel {
-            if let Err(_disconnected) = tx.send(Message::text(new_msg.clone())) {
+        if my_id != uid && my_channel == channel {
+            if let Err(_disconnected) = tx.send(Message::text(msg.clone())) {
                 // The tx is disconnected, our `user_disconnected` code
                 // should be happening in another task, nothing more to
                 // do here.
@@ -124,9 +126,9 @@ async fn user_message(my_id: usize, my_channel: &str, msg: Message, users: &User
     }
 }
 
-async fn user_disconnected(my_id: usize, my_channel: &String, users: &Users) {
-    eprintln!("good bye user: {}", my_id);
+async fn user_disconnected(me: &User, users: &Users) {
+    eprintln!("good bye user: {:?}", me);
 
     // Stream closed up, so remove from the user list
-    users.write().await.remove(&(my_channel.to_owned(), my_id));
+    users.write().await.remove(me);
 }
