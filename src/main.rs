@@ -1,12 +1,5 @@
 use futures_util::{SinkExt, StreamExt, TryFutureExt};
-use std::{
-    collections::HashMap,
-    io::Error as IoError,
-    sync::{
-        atomic::{AtomicUsize, Ordering},
-        Arc,
-    },
-};
+use std::{collections::HashMap, io::Error as IoError, net::SocketAddr, sync::Arc};
 use tokio::sync::{mpsc, RwLock};
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use warp::{
@@ -14,33 +7,24 @@ use warp::{
     Filter,
 };
 
-/// Our global unique user id counter.
-static NEXT_USER_ID: AtomicUsize = AtomicUsize::new(1);
-
-type User = (String, usize);
-
-/// Our state of currently connected users.
-///
-/// - Key is their id
-/// - Value is a sender of `warp::ws::Message`
+type User = (String, SocketAddr);
 type Users = Arc<RwLock<HashMap<User, mpsc::UnboundedSender<Message>>>>;
 
 #[tokio::main]
 async fn main() -> Result<(), IoError> {
-    // Keep track of all connected users, key is usize, value
-    // is a websocket sender.
     let users = Users::default();
     // Turn our "state" into a new Filter...
     let users = warp::any().map(move || users.clone());
 
     let ws = warp::path!("ws" / String)
         // The `ws()` filter will prepare the Websocket handshake.
+        .and(warp::addr::remote())
         .and(users)
         .and(warp::ws())
         .map(
-            |channel: String, users, ws: warp::ws::Ws| {
-                // This will call our function if the handshake succeeds.
-                ws.on_upgrade(move |socket| user_connected(socket, channel, users))
+            |channel: String, remote: Option<SocketAddr>, users, ws: warp::ws::Ws| {
+                let addr = remote.unwrap();
+                ws.on_upgrade(move |socket| user_connected(socket, (channel, addr), users))
             },
         );
 
@@ -55,11 +39,8 @@ async fn main() -> Result<(), IoError> {
     Ok(())
 }
 
-async fn user_connected(ws: WebSocket, my_channel: String, users: Users) {
-    // Use a counter to assign a new unique ID for this user.
-    let my_id = NEXT_USER_ID.fetch_add(1, Ordering::Relaxed);
-
-    eprintln!("new chat user: {}", my_id);
+async fn user_connected(ws: WebSocket, user: User, users: Users) {
+    eprintln!("hello user: {:?}", user);
 
     // Split the socket into a sender and receive of messages.
     let (mut user_ws_tx, mut user_ws_rx) = ws.split();
@@ -81,7 +62,6 @@ async fn user_connected(ws: WebSocket, my_channel: String, users: Users) {
     });
 
     // Save the sender in our list of connected users.
-    let user = (my_channel.clone(), my_id);
     users.write().await.insert(user.clone(), tx);
 
     // Return a `Future` that is basically a state machine managing
@@ -93,11 +73,11 @@ async fn user_connected(ws: WebSocket, my_channel: String, users: Users) {
         let msg = match result {
             Ok(msg) => msg,
             Err(e) => {
-                eprintln!("websocket error(uid={}): {}", my_id, e);
+                eprintln!("websocket error(user={:?}): {}", user, e);
                 break;
             }
         };
-        user_message(&user, msg, &users).await;
+        user_send_message(&user, msg, &users).await;
     }
 
     // user_ws_rx stream will keep processing as long as the user stays
@@ -105,7 +85,7 @@ async fn user_connected(ws: WebSocket, my_channel: String, users: Users) {
     user_disconnected(&user, &users).await;
 }
 
-async fn user_message(me: &User, msg: Message, users: &Users) {
+async fn user_send_message(user: &User, msg: Message, users: &Users) {
     // Skip any non-Text messages...
     let msg = if let Ok(s) = msg.to_str() {
         s
@@ -114,9 +94,9 @@ async fn user_message(me: &User, msg: Message, users: &Users) {
     };
 
     // New message from this user, send it to everyone else (except same uid)...
-    let (my_channel, my_id) = me;
-    for ((channel, uid), tx) in users.read().await.iter() {
-        if my_id != uid && my_channel == channel {
+    let (my_channel, my_addr) = user;
+    for ((channel, addr), tx) in users.read().await.iter() {
+        if my_addr != addr && my_channel == channel {
             if let Err(_disconnected) = tx.send(Message::text(msg.clone())) {
                 // The tx is disconnected, our `user_disconnected` code
                 // should be happening in another task, nothing more to
@@ -126,9 +106,9 @@ async fn user_message(me: &User, msg: Message, users: &Users) {
     }
 }
 
-async fn user_disconnected(me: &User, users: &Users) {
-    eprintln!("good bye user: {:?}", me);
+async fn user_disconnected(user: &User, users: &Users) {
+    eprintln!("good bye user: {:?}", user);
 
     // Stream closed up, so remove from the user list
-    users.write().await.remove(me);
+    users.write().await.remove(user);
 }
