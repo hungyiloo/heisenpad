@@ -1,10 +1,14 @@
 use futures_util::{SinkExt, StreamExt, TryFutureExt};
+use rust_embed::RustEmbed;
 use std::{collections::HashMap, io::Error as IoError, net::SocketAddr, sync::Arc};
 use tokio::sync::{mpsc, RwLock};
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use warp::{
+    http::HeaderValue,
+    path::Tail,
+    reply::Response,
     ws::{Message, WebSocket},
-    Filter,
+    Filter, Rejection, Reply,
 };
 
 type User = (String, SocketAddr);
@@ -28,11 +32,11 @@ async fn main() -> Result<(), IoError> {
             },
         );
 
-    let static_dir = warp::path("static").and(warp::fs::dir("static"));
+    let static_files = warp::path::tail().and_then(serve_frontend_tail);
 
-    let other = warp::fs::file("static/index.html");
+    let other = warp::path::end().and_then(serve_frontend_index);
 
-    let routes = static_dir.or(ws).or(other);
+    let routes = ws.or(static_files).or(other);
 
     warp::serve(routes).run(([127, 0, 0, 1], 3030)).await;
 
@@ -112,3 +116,31 @@ async fn user_disconnected(user: &User, users: &Users) {
     // Stream closed up, so remove from the user list
     users.write().await.remove(user);
 }
+
+const FRONTEND_ENTRYPOINT: &str = "index.html";
+
+async fn serve_frontend_index() -> Result<impl Reply, Rejection> {
+    return serve_frontend(FRONTEND_ENTRYPOINT).await;
+}
+
+async fn serve_frontend_tail(tail: Tail) -> Result<impl Reply, Rejection> {
+    return match serve_frontend(tail.as_str()).await {
+        Ok(r) => Ok(r),
+        Err(_) => serve_frontend(FRONTEND_ENTRYPOINT).await,
+    };
+}
+
+async fn serve_frontend(path: &str) -> Result<impl Reply, Rejection> {
+    let asset = FrontEnd::get(path).ok_or_else(warp::reject::not_found)?;
+    let mime = mime_guess::from_path(path).first_or_octet_stream();
+    let mut res = Response::new(asset.data.into());
+    res.headers_mut().insert(
+        "content-type",
+        HeaderValue::from_str(mime.as_ref()).unwrap(),
+    );
+    Ok(res)
+}
+
+#[derive(RustEmbed)]
+#[folder = "ui/build"]
+struct FrontEnd;
