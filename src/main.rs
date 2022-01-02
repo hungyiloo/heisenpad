@@ -98,9 +98,9 @@ async fn user_send_message(user: &User, msg: Message, users: &Users) {
     };
 
     // New message from this user, send it to everyone else (except same uid)...
-    let (my_channel, my_addr) = user;
-    for ((channel, addr), tx) in users.read().await.iter() {
-        if my_addr != addr && my_channel == channel {
+    let (my_channel, _) = user;
+    for ((channel, _), tx) in users.read().await.iter() {
+        if my_channel == channel {
             if let Err(_disconnected) = tx.send(Message::text(msg.clone())) {
                 // The tx is disconnected, our `user_disconnected` code
                 // should be happening in another task, nothing more to

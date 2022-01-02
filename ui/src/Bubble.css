@@ -1,0 +1,85 @@
+.chat-bubble {
+  @apply font-mono text-lg text-zinc-900 flex items-end relative mt-6 mb-12;
+  --bg: theme('colors.zinc.50');
+}
+.chat-bubble.highlight {
+  --bg: theme('colors.cyan.400');
+}
+
+.chat-tools {
+  @apply font-display text-xs;
+  display: none;
+  flex-direction: row;
+  align-items: center;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  text-transform: uppercase;
+  color: theme('colors.zinc.50');
+  padding-top: 0.6rem;
+  transform: translateY(100%);
+}
+.chat-tools button {
+  @apply mx-2;
+}
+.chat-bubble:hover .chat-tools {
+  display: flex;
+}
+.chat-bubble.right .chat-tools {
+  justify-content: end;
+}
+.chat-bubble.left .chat-tools {
+  justify-content: start;
+  flex-direction: row-reverse;
+}
+
+.chat-bubble.right {
+  @apply justify-end;
+  margin-right: 16px;
+}
+
+.chat-bubble.left {
+  @apply justify-start;
+  margin-left: 16px;
+}
+
+.chat-bubble-content {
+  @apply p-4 break-words whitespace-pre-wrap;
+  word-wrap: break-word;
+  background: var(--bg);
+  box-shadow: var(--bg) 0px 4px, var(--bg) 0px -4px, var(--bg) 4px 0px, var(--bg) -4px 0px;
+  max-width: 90%;
+  min-width: 12rem;
+}
+
+.chat-bubble-arrow {
+  width: 12px;
+  height: 4px;
+  position: absolute;
+  bottom: -4px;
+  background: var(--bg);
+}
+
+.chat-bubble .chat-bubble-arrow::before {
+  content: "";
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  bottom: 4px;
+  background: var(--bg);
+}
+
+.chat-bubble.right .chat-bubble-arrow {
+  right: -12px;
+}
+.chat-bubble.right .chat-bubble-arrow::before {
+  left: 4px;
+}
+
+.chat-bubble.left .chat-bubble-arrow {
+  left: -12px;
+}
+.chat-bubble.left .chat-bubble-arrow::before {
+  right: 4px;
+}

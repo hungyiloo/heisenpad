@@ -1,0 +1,17 @@
+.retro-input {
+  @apply font-mono p-4 text-lg;
+
+  --text-color: theme('colors.zinc.900');
+  --border-color: theme('colors.zinc.600');
+  --background-color: theme('colors.zinc.200');
+
+  color: var(--text-color);
+  background: var(--background-color);
+  box-shadow: var(--border-color) 0px 4px, var(--border-color) 0px -4px, var(--border-color) 4px 0px, var(--border-color) -4px 0px;
+  outline: none;
+}
+
+.retro-input:focus {
+  outline: none;
+  --border-color: theme('colors.cyan.500');
+}

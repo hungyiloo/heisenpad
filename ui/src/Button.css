@@ -1,0 +1,36 @@
+.chunky-button {
+  @apply font-display px-4 py-2 flex items-center;
+
+  --text-color: theme('colors.zinc.200');
+  --border-color: theme('colors.zinc.200');
+  --background-color: theme('colors.zinc.800');
+
+  color: var(--text-color);
+  background: var(--background-color);
+  box-shadow: var(--border-color) 0px 4px, var(--border-color) 0px -4px, var(--border-color) 4px 0px, var(--border-color) -4px 0px;
+}
+
+.chunky-button.amber {
+  --text-color: theme('colors.amber.100');
+  --border-color: theme('colors.amber.500');
+  --background-color: theme('colors.amber.900');
+}
+
+.chunky-button.rose {
+  --text-color: theme('colors.rose.50');
+  --border-color: theme('colors.rose.500');
+  --background-color: theme('colors.rose.900');
+}
+
+.chunky-button:hover {
+  filter: brightness(1.1);
+}
+
+.chunky-button:active {
+  filter: brightness(0.8);
+}
+
+.chunky-button:disabled {
+  filter: brightness(0.3);
+  cursor: not-allowed;
+}
