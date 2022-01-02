@@ -21,7 +21,11 @@ function Chat() {
   const [chat, setChat] = useState<Message[]>([]);
   const [draft, setDraft] = useState("");
 
-  const { sendMessage, lastMessage } = useWebSocket(`ws://localhost:3030/ws/${channel}`);
+  const base = process.env.REACT_APP_WS_URL === '/'
+    ? document.location.origin.replace("https:", "wss:").replace("http:", "ws:")
+    : process.env.REACT_APP_WS_URL;
+
+  const { sendMessage, lastMessage } = useWebSocket(`${base}/ws/${channel}`);
 
   useEffect(() => {
     if (!lastMessage) return

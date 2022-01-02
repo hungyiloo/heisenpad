@@ -24,7 +24,7 @@ export default function Bubble(props: { position: 'left' | 'right', children?: R
       </button>
       <button
         onClick={() => copyToClipboard()}
-        className="ml-4 text-cyan-500 hover:text-cyan-600 hover:underline">
+        className="text-cyan-500 hover:text-cyan-600 hover:underline">
         COPY
       </button>
     </div>
