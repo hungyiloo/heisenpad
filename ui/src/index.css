@@ -37,3 +37,30 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background-color: theme('colors.cyan.500');
 }
+
+/* react-responsive-modal default styling */
+#app .react-responsive-modal-closeButton {
+  @apply text-zinc-500 hover:text-rose-500;
+  outline: none;
+}
+#app .react-responsive-modal-modal {
+  @apply relative font-display p-12;
+  box-shadow: 0.25rem 0.25rem 1rem #00000088;
+  color: theme('colors.zinc.200');
+  background: transparent;
+}
+#app .react-responsive-modal-modal:before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 4px;
+  bottom: 4px;
+  --border-color: theme('colors.zinc.800');
+  background: theme('colors.zinc.900');
+  z-index: -1;
+  box-shadow: var(--border-color) 0px 4px, var(--border-color) 0px -4px, var(--border-color) 4px 0px, var(--border-color) -4px 0px;
+}
+#app .react-responsive-modal-overlay {
+  background: #000000cc;
+}

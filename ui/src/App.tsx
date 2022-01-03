@@ -1,10 +1,14 @@
 import { nanoid } from 'nanoid';
 import React, { useEffect, useMemo, useState } from 'react';
+import { useRef } from 'react';
+import { Modal } from 'react-responsive-modal';
 import { Route, Routes, useParams } from 'react-router-dom';
 import useWebSocket from 'react-use-websocket';
 import Bubble from './Bubble';
 import Button from './Button';
-import Input from './Input';
+import { Input, TextArea } from './Input';
+import { welcomeMessage } from './welcome';
+import 'react-responsive-modal/styles.css';
 
 function App() {
   return <Routes>
@@ -14,11 +18,12 @@ function App() {
 }
 
 function Chat() {
-  const { channel: routeChannel } = useParams<{ channel: string }>();
-  const channel = encodeURIComponent(routeChannel ?? "lobby");
-  const myUserId = useMemo(() => nanoid(), []);
-
+  const { channel: routeChannel } = useParams<{ channel: string }>()
+  const channel = encodeURIComponent(routeChannel ?? "lobby")
+  const myUserId = useMemo(() => nanoid(), [])
+  const scrollerRef = useRef<HTMLDivElement>(null)
   const [chat, setChat] = useState<Message[]>([]);
+  const [secretKey, setSecretKey] = useState("");
 
   const base = process.env.REACT_APP_WS_URL === '/'
     ? document.location.origin.replace("https:", "wss:").replace("http:", "ws:")
@@ -27,8 +32,8 @@ function Chat() {
   const { sendMessage, lastMessage } = useWebSocket(`${base}/ws/${channel}`);
 
   useEffect(() => {
+    // When we receive a websocket message, process it
     if (!lastMessage) return
-
     const cmd = JSON.parse(lastMessage.data) as Command
     switch (cmd.command) {
       case "put": {
@@ -46,20 +51,24 @@ function Chat() {
         break;
       }
     }
-  }, [lastMessage])
+
+    // Keep scrolling to the latest message if we were scrolled to the end
+    if (!scrollerRef.current) return
+    const atBottom = scrollerRef.current.scrollTop + scrollerRef.current.offsetHeight >= scrollerRef.current.scrollHeight
+    if (atBottom) {
+      setTimeout(() => {
+        if (!scrollerRef.current) return
+        scrollerRef.current.scrollTo({ behavior: 'smooth', top: scrollerRef.current.scrollHeight });
+      })
+    }
+  }, [scrollerRef, lastMessage])
 
   useEffect(() => {
+    // On first visit or on channel change, display the welcome message
     setChat([{
       id: nanoid(),
       user: nanoid(),
-      content:
-`Hi there! Need to send secure and temporary messages to someone? Heisenpad can help.
-
-Use heisenpad to send short-lived messages to people only in this channel. Messages only exist between senders & receivers. No logging. No persisting. Refresh and they're gone!
-
-You're currently in the [${channel}] channel. You can change channels at the top of your screen.
-
-Activate end-to-end encryption by *setting a key* at the top right of the screen. Any listeners will need the same key to read your encrypted messages.`
+      content: welcomeMessage(channel)
     }])
   }, [channel])
 
@@ -88,10 +97,10 @@ Activate end-to-end encryption by *setting a key* at the top right of the screen
           {channel}
         </div>
         <div className="ml-auto">
-          <Key active/>
+          <Key secretKey={secretKey} onChange={setSecretKey} />
         </div>
       </div>
-      <div className="flex-grow overflow-auto px-4 py-2">
+      <div ref={scrollerRef} className="flex-grow overflow-auto px-4 py-2">
         {chat.map(msg => <React.Fragment key={msg.id}>
           <Bubble
             position={msg.user === myUserId ? 'right' : 'left'}
@@ -101,7 +110,7 @@ Activate end-to-end encryption by *setting a key* at the top right of the screen
           </Bubble>
         </React.Fragment>)}
       </div>
-      <Editor onDone={put}/>
+      <Editor onDone={put} />
     </div>
   </div>
 }
@@ -124,7 +133,7 @@ function Editor(props: { onDone: (value: string) => void }) {
         : <div className="text-sm font-mono text-zinc-500 mb-3">
           Press <span className="border border-zinc-700 px-1 bg-zinc-800 text-zinc-400">Shift+⏎</span> to activate multi&ndash;line mode
         </div>}
-      <Input
+      <TextArea
         value={draft}
         onChange={e => setDraft(e.target.value)}
         onKeyDown={e => {
@@ -163,17 +172,75 @@ function KeyboardShortcut(props: { children: React.ReactNode }) {
   return <span className="border border-cyan-600 px-1 bg-cyan-900 text-cyan-50">{props.children}</span>
 }
 
-function Key(props: { active?: boolean }) {
-  return <div className="flex items-center">
-    <svg
-      className={`h-5 retro-box mr-4 ${props.active ? 'text-zinc-900 bg-emerald-500 emerald' : 'text-rose-400 bg-rose-900 rose-900 animate-pulse'}`}
-      viewBox="0 0 100 100">
-      <use xlinkHref="/key.svg#icon-key" />
-    </svg>
-    {props.active
-      ? <span className="font-display text-sm text-emerald-500 mt-1">Secure</span>
-      : <span className="font-display text-sm text-rose-700 mt-1">Unsecure</span>}
-  </div>
+function Key(props: { secretKey: string, onChange: (newKey: string) => void }) {
+  const [editing, setEditing] = useState(false)
+  const [draftKey, setDraftKey] = useState("")
+  const active = !!props.secretKey;
+  return <React.Fragment>
+    <div
+      className="flex items-center cursor-pointer opacity-90 hover:opacity-100"
+      onClick={() => setEditing(true)}>
+      <svg
+        className={`h-5 retro-box mr-4 ${active ? 'text-zinc-900 bg-emerald-500 emerald' : 'text-rose-400 bg-rose-900 rose-900 animate-pulse'}`}
+        viewBox="0 0 100 100">
+        <use xlinkHref="/key.svg#icon-key" />
+      </svg>
+      {active
+        ? <span className="font-display text-sm text-emerald-500 mt-1">ENCRYPTED</span>
+        : <span className="font-display text-sm text-rose-700 mt-1">SET KEY</span>}
+    </div>
+    <Modal
+      open={editing}
+      onClose={() => setEditing(false)}
+      closeIcon={<svg
+        className={`h-5 `}
+        viewBox="0 0 100 100">
+        <use xlinkHref="/x.svg#icon-x" />
+      </svg>}>
+      <div className="flex flex-col">
+        <div className="mb-2 text-lg">Set a strong key</div>
+        <div className="mb-8 text-sm text-zinc-500">and <span className="text-zinc-200">securely</span> share to your listeners</div>
+        <Input
+          type="password"
+          value={draftKey}
+          onChange={e => setDraftKey(e.target.value)}
+          onKeyPress={e => {
+            if (e.code === 'Enter') {
+              e.preventDefault()
+              props.onChange(draftKey)
+              setEditing(false)
+            }
+          }}
+          placeholder="e.g. correct horse battery staple"
+          className="text-sm"
+          style={{ width: '30rem' }}/>
+        <div className="flex items-center mt-12">
+          <button
+            className="font-display text-rose-500 hover:text-rose-300"
+            onClick={() => {
+              setDraftKey("")
+              props.onChange("")
+              setEditing(false)
+            }}>
+            CLEAR KEY
+          </button>
+          <button
+            className="ml-auto font-display text-zinc-600 hover:text-zinc-300"
+            onClick={() => setEditing(false)}>
+            CANCEL
+          </button>
+          <button
+            className="ml-6 font-display text-emerald-500 hover:text-emerald-300"
+            onClick={() => {
+              props.onChange(draftKey)
+              setEditing(false)
+            }}>
+            DONE
+          </button>
+        </div>
+      </div>
+    </Modal>
+  </React.Fragment>
 }
 
 type Command =
