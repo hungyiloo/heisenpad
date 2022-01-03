@@ -44,7 +44,7 @@ async fn main() -> Result<(), IoError> {
 }
 
 async fn user_connected(ws: WebSocket, user: User, users: Users) {
-    eprintln!("hello user: {:?}", user);
+    // eprintln!("hello user: {:?}", user);
 
     // Split the socket into a sender and receive of messages.
     let (mut user_ws_tx, mut user_ws_rx) = ws.split();
@@ -111,7 +111,7 @@ async fn user_send_message(user: &User, msg: Message, users: &Users) {
 }
 
 async fn user_disconnected(user: &User, users: &Users) {
-    eprintln!("good bye user: {:?}", user);
+    // eprintln!("good bye user: {:?}", user);
 
     // Stream closed up, so remove from the user list
     users.write().await.remove(user);
