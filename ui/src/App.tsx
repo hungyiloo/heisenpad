@@ -2,7 +2,7 @@ import { nanoid } from 'nanoid';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRef } from 'react';
 import { Modal } from 'react-responsive-modal';
-import { Route, Routes, useParams } from 'react-router-dom';
+import { Route, Routes, useNavigate, useParams } from 'react-router-dom';
 import useWebSocket from 'react-use-websocket';
 import Bubble from './Bubble';
 import Button from './Button';
@@ -107,10 +107,7 @@ function Chat() {
         <div className="text-lg tracking-wider font-display text-zinc-100">
           HEISENPAD
         </div>
-        <span className="font-display text-zinc-500 ml-4 text-xl">@</span>
-        <div className="tracking-wider font-display text-amber-500 hover:text-amber-300 cursor-pointer">
-          {channel}
-        </div>
+        <ChannelSwitcher channel={channel} />
         <div className="ml-auto">
           <Key secretKey={secretKey} onChange={setSecretKey} />
         </div>
@@ -217,7 +214,7 @@ function Key(props: { secretKey: string, onChange: (newKey: string) => void }) {
         <use xlinkHref="/key.svg#icon-key" />
       </svg>
       {active
-        ? <span className="font-display text-sm text-emerald-500 mt-1">ENCRYPTED</span>
+        ? <span className="font-display text-sm text-emerald-500 mt-1">SECURED</span>
         : <span className="font-display text-sm text-rose-700 mt-1">SET<span className="ml-2">KEY</span></span>}
     </div>
     <Modal
@@ -267,6 +264,86 @@ function Key(props: { secretKey: string, onChange: (newKey: string) => void }) {
               setEditing(false)
             }}>
             DONE
+          </button>
+        </div>
+      </div>
+    </Modal>
+  </React.Fragment>
+}
+
+function ChannelSwitcher(props: { channel: string }) {
+  const navigate = useNavigate()
+  const [editing, setEditing] = useState(false)
+  const [draftChannel, setDraftChannel] = useState(props.channel)
+
+  useEffect(() => {
+    setDraftChannel(props.channel)
+
+  }, [props.channel])
+
+  const url = document.location.origin + "/p/" + encodeURIComponent(draftChannel)
+
+  function joinChannel() {
+    navigate(`/p/${encodeURIComponent(draftChannel)}`)
+    setEditing(false)
+  }
+
+  return <React.Fragment>
+    <span className="font-display text-zinc-500 ml-4 text-xl">@</span>
+    <div
+      className="tracking-wider font-display text-amber-500 hover:text-amber-300 cursor-pointer"
+      onClick={() => setEditing(true)}>
+      {decodeURIComponent(props.channel)}
+    </div>
+    <Modal
+      open={editing}
+      onClose={() => setEditing(false)}
+      closeIcon={<svg
+        className={`h-5 `}
+        viewBox="0 0 100 100">
+        <use xlinkHref="/x.svg#icon-x" />
+      </svg>}>
+      <div className="flex flex-col">
+        <div className="mb-8 text-lg">Join a channel</div>
+        <Input
+          value={draftChannel}
+          onChange={e => setDraftChannel(e.target.value)}
+          onKeyPress={e => {
+            if (e.code === 'Enter') {
+              e.preventDefault()
+              joinChannel()
+            }
+          }}
+          placeholder="e.g. lobby"
+          className="text-sm"
+          style={{ width: '30rem' }}/>
+        <div className="mt-8 text-sm font-display">
+          <a
+            href={url}
+            onClick={e => { e.preventDefault(); joinChannel() }}
+            className="text-cyan-500 hover:text-cyan-300 underline">
+            {url}
+          </a>
+        </div>
+        <div className="flex items-center mt-12">
+          <button
+            className="font-display text-cyan-500 hover:text-cyan-300"
+            onClick={() => {
+              navigator.clipboard.writeText(url)
+            }}>
+            COPY LINK
+          </button>
+          <button
+            className="ml-auto font-display text-zinc-600 hover:text-zinc-300"
+            onClick={() => setEditing(false)}>
+            CANCEL
+          </button>
+          <button
+            className="ml-6 font-display text-amber-500 hover:text-amber-300"
+            onClick={() => {
+              joinChannel()
+            }}>
+            JOIN
           </button>
         </div>
       </div>
