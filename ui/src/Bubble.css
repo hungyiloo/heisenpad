@@ -5,6 +5,10 @@
 .chat-bubble.highlight {
   --bg: theme('colors.amber.300');
 }
+.chat-bubble.locked {
+  @apply text-rose-100;
+  --bg: theme('colors.rose.900');
+}
 
 .chat-tools {
   @apply font-display text-xs transition-all opacity-0 pointer-events-none;

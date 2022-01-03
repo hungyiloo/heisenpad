@@ -9,6 +9,7 @@ import Button from './Button';
 import { Input, TextArea } from './Input';
 import { welcomeMessage } from './welcome';
 import 'react-responsive-modal/styles.css';
+import StringCrypto from 'string-crypto';
 
 function App() {
   return <Routes>
@@ -72,12 +73,26 @@ function Chat() {
     }])
   }, [channel])
 
+  const [encryptor, decryptor] = useMemo(() => {
+    if (!secretKey) return [undefined, undefined]
+    const { encryptString, decryptString } = new StringCrypto({ salt: channel + "OZte5GiFetRlkKAt0UkS" })
+    return [
+      (s: string) => encryptString(s, secretKey),
+      (s: string) => decryptString(s, secretKey)
+    ]
+  }, [secretKey, channel])
+
   function send(cmd: Command) { sendMessage(JSON.stringify(cmd)); }
 
   function put(draft: string) {
     send({
       command: "put",
-      message: { id: nanoid(), user: myUserId, content: draft.trim() }
+      message: {
+        id: nanoid(),
+        user: myUserId,
+        content: encryptor ? encryptor(draft.trim()) : draft.trim(),
+        encrypted: !!encryptor
+      }
     });
   }
 
@@ -102,12 +117,28 @@ function Chat() {
       </div>
       <div ref={scrollerRef} className="flex-grow overflow-auto px-4 py-2">
         {chat.map(msg => <React.Fragment key={msg.id}>
-          <Bubble
-            position={msg.user === myUserId ? 'right' : 'left'}
-            onResend={() => send({ command: "put", message: msg })}
-            onDelete={() => send({ command: "delete", id: msg.id })}>
-            {msg.content}
-          </Bubble>
+          {msg.encrypted
+            ? <React.Fragment>
+              {decryptor
+                ? <Bubble
+                  unlocked
+                  position={msg.user === myUserId ? 'right' : 'left'}
+                  onResend={() => send({ command: "put", message: msg })}
+                  onDelete={() => send({ command: "delete", id: msg.id })}>
+                  {decryptor(msg.content)}
+                </Bubble>
+                : <Bubble locked position={msg.user === myUserId ? 'right' : 'left'}>
+                  <span className="font-display text-sm">
+                    ENCRYPTED &mdash; SET A KEY
+                  </span>
+                </Bubble>}
+            </React.Fragment>
+            : <Bubble
+              position={msg.user === myUserId ? 'right' : 'left'}
+              onResend={() => send({ command: "put", message: msg })}
+              onDelete={() => send({ command: "delete", id: msg.id })}>
+              {msg.content}
+            </Bubble>}
         </React.Fragment>)}
       </div>
       <Editor onDone={put} />
@@ -187,7 +218,7 @@ function Key(props: { secretKey: string, onChange: (newKey: string) => void }) {
       </svg>
       {active
         ? <span className="font-display text-sm text-emerald-500 mt-1">ENCRYPTED</span>
-        : <span className="font-display text-sm text-rose-700 mt-1">SET KEY</span>}
+        : <span className="font-display text-sm text-rose-700 mt-1">SET<span className="ml-2">KEY</span></span>}
     </div>
     <Modal
       open={editing}

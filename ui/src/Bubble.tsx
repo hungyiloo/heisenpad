@@ -1,7 +1,7 @@
 import { useState } from "react";
 import "./Bubble.css";
 
-export default function Bubble(props: { position: 'left' | 'right', children?: React.ReactNode, onDelete?: () => void, onResend?: () => void }) {
+export default function Bubble(props: { position: 'left' | 'right', locked?: boolean, unlocked?: boolean, children?: React.ReactNode, onDelete?: () => void, onResend?: () => void }) {
   const [highlighted, setHighlighted] = useState(false)
 
   function copyToClipboard() {
@@ -15,11 +15,16 @@ export default function Bubble(props: { position: 'left' | 'right', children?: R
     setTimeout(() => setHighlighted(false), 300);
   }
 
-  return <div className={`chat-bubble ${highlighted ? 'highlight' : ''} ${props.position}`}>
+  return <div className={`chat-bubble ${props.locked ? 'locked' : ''} ${highlighted ? 'highlight' : ''} ${props.position}`}>
     <pre className="chat-bubble-content">
       {props.children}
     </pre>
-    <div className="chat-tools">
+    {(props.locked || props.unlocked) && <svg
+      className={`${props.locked ? 'h-8 text-rose-800' : 'h-4 text-amber-500'} self-center ${props.position === 'left' ? 'ml-4' : 'order-first mr-4' }`}
+      viewBox="0 0 100 100">
+      <use xlinkHref="/key.svg#icon-key" />
+    </svg>}
+    {!props.locked && <div className="chat-tools">
       <button
         onClick={() => props.onDelete?.()}
         className="text-rose-500 hover:text-rose-300">
@@ -35,7 +40,7 @@ export default function Bubble(props: { position: 'left' | 'right', children?: R
         className="text-emerald-500 hover:text-emerald-300">
         RESEND
       </button>
-    </div>
+    </div>}
     <div className="chat-bubble-arrow"/>
   </div>
 }
