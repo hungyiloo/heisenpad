@@ -2,7 +2,7 @@ import { nanoid } from 'nanoid';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRef } from 'react';
 import { Route, Routes, useParams } from 'react-router-dom';
-import useWebSocket from 'react-use-websocket';
+import useWebSocket, { ReadyState } from 'react-use-websocket';
 import Bubble from './Bubble';
 import Button from './Button';
 import { TextArea } from './Input';
@@ -11,6 +11,7 @@ import 'react-responsive-modal/styles.css';
 import StringCrypto from 'string-crypto';
 import { ChannelSwitcher } from './ChannelSwitcher';
 import { KeyManager } from './KeyManager';
+import { Modal } from 'react-responsive-modal';
 
 function App() {
   return <Routes>
@@ -31,7 +32,15 @@ function Chat() {
     ? document.location.origin.replace("https:", "wss:").replace("http:", "ws:")
     : process.env.REACT_APP_WS_URL;
 
-  const { sendMessage, lastMessage } = useWebSocket(`${base}/ws/${channel}`);
+  const { sendMessage, lastMessage, readyState } = useWebSocket(
+    `${base}/ws/${channel}`,
+    {
+      shouldReconnect: () => true,
+      reconnectInterval: 1000,
+      reconnectAttempts: 10
+    },
+    true
+  );
 
   useEffect(() => {
     // When we receive a websocket message, process it
@@ -141,6 +150,17 @@ function Chat() {
       </div>
       <Editor onDone={put} />
     </div>
+    <Modal open={readyState !== ReadyState.OPEN} onClose={() => {}} closeIcon={<React.Fragment/>}>
+      <div className="font-display animate-pulse text-amber-500">
+        {readyState === ReadyState.CLOSING
+          ? "TERMINATING..."
+          : readyState === ReadyState.CONNECTING
+            ? "CONNECTING..."
+            : readyState === ReadyState.UNINSTANTIATED || readyState === ReadyState.CLOSED
+              ? "DISCONNECTED"
+              : "PLEASE WAIT..."}
+      </div>
+    </Modal>
   </div>
 }
 
