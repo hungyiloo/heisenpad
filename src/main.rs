@@ -66,7 +66,7 @@ async fn user_connected(ws: WebSocket, user: User, users: Users) {
     });
 
     // Save the sender in our list of connected users.
-    users.write().await.insert(user.clone(), tx);
+    users.write().await.insert(user.clone(), tx.clone());
 
     // Return a `Future` that is basically a state machine managing
     // this specific user's connection.
@@ -81,7 +81,7 @@ async fn user_connected(ws: WebSocket, user: User, users: Users) {
                 break;
             }
         };
-        user_send_message(&user, msg, &users).await;
+        user_broadcast(&user, &tx, msg, &users).await;
     }
 
     // user_ws_rx stream will keep processing as long as the user stays
@@ -89,25 +89,32 @@ async fn user_connected(ws: WebSocket, user: User, users: Users) {
     user_disconnected(&user, &users).await;
 }
 
-async fn user_send_message(user: &User, msg: Message, users: &Users) {
+async fn user_broadcast(user: &User, user_tx: &mpsc::UnboundedSender<Message>, msg: Message, users: &Users) {
     // Skip any non-Text messages...
-    let msg = if let Ok(s) = msg.to_str() {
-        s
-    } else {
-        return;
+    let msg_json = if let Ok(s) = msg.to_str() { s } else { return };
+    let msg: serde_json::Value = if let Ok(v) = serde_json::from_str(msg_json) { v } else { return };
+    let command = match &msg["command"] {
+        serde_json::Value::String(c) => c,
+        _ => { return }
     };
 
-    // New message from this user, send it to everyone else (except same uid)...
-    let (my_channel, _) = user;
-    for ((channel, _), tx) in users.read().await.iter() {
-        if my_channel == channel {
-            if let Err(_disconnected) = tx.send(Message::text(msg.clone())) {
-                // The tx is disconnected, our `user_disconnected` code
-                // should be happening in another task, nothing more to
-                // do here.
+    match command.as_ref() {
+        "ping" => {
+            let _ = user_tx.send(Message::text(msg_json.clone()));
+            // errors are handled elsewhere
+        },
+        _ =>  {
+            // New message from this user, send it to everyone else (except same uid)...
+            let (my_channel, _) = user;
+            for ((channel, _), tx) in users.read().await.iter() {
+                if my_channel == channel {
+                    let _ = tx.send(Message::text(msg_json.clone()));
+                    // errors are handled elsewhere
+                }
             }
         }
     }
+
 }
 
 async fn user_disconnected(user: &User, users: &Users) {

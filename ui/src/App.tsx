@@ -106,6 +106,16 @@ function Chat() {
     });
   }
 
+  useEffect(() => {
+    if (readyState === ReadyState.OPEN) {
+      const sendPing = () => send({ command: "ping" })
+      const timer = setInterval(sendPing, 60000)
+      sendPing()
+      return () => clearInterval(timer)
+    }
+    return () => {}
+  }, [readyState]);
+
   return <div className="flex justify-center">
     <div className="container flex flex-col h-screen px-2">
       <div className="flex flex-wrap items-center content-center pt-6 pb-0 px-2 border-b-4 border-zinc-800">
@@ -222,6 +232,7 @@ function KeyboardShortcut(props: { children: React.ReactNode }) {
 }
 
 type Command =
+  | { command: "ping" }
   | { command: "put", message: Message }
   | { command: "delete", id: string }
 

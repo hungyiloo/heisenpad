@@ -211,6 +211,7 @@ dependencies = [
  "futures-util",
  "mime_guess",
  "rust-embed",
+ "serde_json",
  "tokio",
  "tokio-stream",
  "warp",
