@@ -1,5 +1,5 @@
 .chat-bubble {
-  @apply font-mono text-lg text-zinc-900 flex items-end relative mt-6 mb-12;
+  @apply font-mono md:text-lg text-zinc-900 flex items-end relative mt-6 mb-12;
   --bg: theme('colors.zinc.50');
 }
 .chat-bubble.highlight {

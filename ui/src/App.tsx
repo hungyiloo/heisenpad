@@ -10,7 +10,7 @@ import { ChannelSwitcher } from './ChannelSwitcher';
 import useWindowSize from './hooks/useWindowSize';
 import { TextArea } from './Input';
 import { KeyManager } from './KeyManager';
-import { welcomeMessage } from './welcome';
+import WelcomeBubble from './WelcomeBubble';
 
 function App() {
   return <Routes>
@@ -68,20 +68,18 @@ function Chat() {
     if (!scrollerRef.current) return
     const atBottom = scrollerRef.current.scrollTop + scrollerRef.current.offsetHeight >= scrollerRef.current.scrollHeight
     if (atBottom) {
-      setTimeout(() => {
-        if (!scrollerRef.current) return
-        scrollerRef.current.scrollTo({ behavior: 'smooth', top: scrollerRef.current.scrollHeight });
-      })
+      setTimeout(() => scrollChatToBottom(), 100)
     }
   }, [scrollerRef, lastMessage])
 
+  function scrollChatToBottom(quick?: boolean) {
+    if (!scrollerRef.current) return
+    scrollerRef.current.scrollTo({ behavior: quick ? 'auto' : 'smooth', top: scrollerRef.current.scrollHeight });
+  }
+
   useEffect(() => {
-    // On first visit or on channel change, display the welcome message
-    setChat([{
-      id: nanoid(),
-      user: nanoid(),
-      content: welcomeMessage(channel)
-    }])
+    // On first visit or on channel change, clear the message list
+    setChat([])
   }, [channel])
 
   const [encryptor, decryptor] = useMemo(() => {
@@ -96,6 +94,7 @@ function Chat() {
   function send(cmd: Command) { sendMessage(JSON.stringify(cmd)); }
 
   function put(draft: string) {
+    scrollChatToBottom(true)
     send({
       command: "put",
       message: {
@@ -104,13 +103,13 @@ function Chat() {
         content: encryptor ? encryptor(draft.trim()) : draft.trim(),
         encrypted: !!encryptor
       }
-    });
+    })
   }
 
   useEffect(() => {
     if (readyState === ReadyState.OPEN) {
       const sendPing = () => send({ command: "ping" })
-      const timer = setInterval(sendPing, 60000)
+      const timer = setInterval(sendPing, 10000)
       sendPing()
       return () => clearInterval(timer)
     }
@@ -127,11 +126,11 @@ function Chat() {
           viewBox="0 0 100 100">
           <use xlinkHref="/heisenpad.svg#icon-logo" />
         </svg>
-        <div className="text-lg tracking-wider font-display text-zinc-100 mr-4 mb-4">
+        <div className="text-sm md:text-lg tracking-wider font-display text-zinc-100 mr-4 mb-4">
           HEISENPAD
         </div>
-        <ChannelSwitcher channel={channel} />
-        <div className="font-display ml-auto mb-4 text-xs">
+        <div className="mr-auto"><ChannelSwitcher channel={channel} /></div>
+        <div className="font-display mr-4 mb-4 text-xs">
           {readyState === ReadyState.CLOSING
             ? <span className="text-amber-500">
               <DiamondIcon className="mr-2"/>
@@ -151,11 +150,12 @@ function Chat() {
                   <DiamondIcon/>
                 </span>}
         </div>
-        <div className="ml-6">
+        <div>
           <KeyManager secretKey={secretKey} onChange={setSecretKey} />
         </div>
       </div>
       <div ref={scrollerRef} className="flex-grow overflow-auto px-4 py-2">
+        <WelcomeBubble channel={channel}/>
         {chat.map(msg => <React.Fragment key={msg.id}>
           {msg.encrypted
             ? <React.Fragment>
@@ -182,6 +182,13 @@ function Chat() {
         </React.Fragment>)}
       </div>
       <Editor onDone={put} disabled={readyState !== ReadyState.OPEN} />
+      <div className="h-12 flex-shrink-0 border-t-4 border-zinc-800 text-xs font-mono items-center flex text-zinc-500 px-1">
+        <span>Made with typescript, rust and love by</span>
+        <span> </span>
+        <a href="https://github.com/hungyiloo" target="_blank" rel="noreferrer" className="text-cyan-600 hover:text-cyan-500 hover:underline ml-2">
+          @hungyiloo
+        </a>
+      </div>
     </div>
   </div>
 }
@@ -230,7 +237,7 @@ function Editor(props: { onDone: (value: string) => void, disabled?: boolean }) 
           }
         }}
         rows={multiline ? 5 : 1}
-        placeholder={props.disabled ? "You are disconnected!" : "Type something..."}
+        placeholder={props.disabled ? "Disconnected!" : "Type something..."}
         className={`w-full ${props.disabled ? 'cursor-not-allowed' : ''}`} />
     </div>
     <Button

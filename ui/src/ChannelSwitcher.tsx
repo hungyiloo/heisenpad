@@ -22,9 +22,9 @@ export function ChannelSwitcher(props: { channel: string; }) {
 
   return <React.Fragment>
     <div className="flex mb-4">
-      <span className="font-display text-zinc-500 text-xl">@</span>
+      <span className="font-display text-zinc-500 text-base md:text-xl">@</span>
       <div
-        className="tracking-wider font-display text-amber-500 hover:text-amber-300 cursor-pointer"
+        className="tracking-wider text-sm md:text-lg font-display text-amber-500 hover:text-amber-300 cursor-pointer"
         onClick={() => setEditing(true)}>
         {decodeURIComponent(props.channel)}
       </div>

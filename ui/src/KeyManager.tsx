@@ -16,8 +16,8 @@ export function KeyManager(props: { secretKey: string; onChange: (newKey: string
         <use xlinkHref="/key.svg#icon-key" />
       </svg>
       {active
-        ? <span className="font-display text-sm text-emerald-500 mt-1">SECURED</span>
-        : <span className="font-display text-sm text-rose-700 mt-1">SET<span className="ml-2">KEY</span></span>}
+        ? <span className="font-display text-xs md:text-sm text-emerald-500 mt-1">SECURED</span>
+        : <span className="font-display text-xs md:text-sm text-rose-700 mt-1">SET<span className="ml-2">KEY</span></span>}
     </div>
     <Modal
       open={editing}
@@ -28,8 +28,8 @@ export function KeyManager(props: { secretKey: string; onChange: (newKey: string
         <use xlinkHref="/x.svg#icon-x" />
       </svg>}>
       <div className="flex flex-col">
-        <div className="mb-2 text-base sm:text-lg">Set a strong key</div>
-        <div className="mb-8 text-sm text-zinc-500">and <span className="text-zinc-200">securely</span> share to your listeners</div>
+        <div className="mb-2 text-base md:text-lg">Set a strong key</div>
+        <div className="mb-8 text-xs md:text-sm text-zinc-500">and <span className="text-zinc-200">securely</span> share to your listeners</div>
         <Input
           type="password"
           value={draftKey}
