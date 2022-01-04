@@ -6,8 +6,8 @@
    height="100"
    viewBox="0 0 26.458333 26.458334"
    version="1.1"
-   id="icon-x"
-   sodipodi:docname="x.svg"
+   id="icon-diamond"
+   sodipodi:docname="diamond.svg"
    inkscape:version="1.1 (c68e22c387, 2021-05-23)"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
@@ -22,9 +22,9 @@
      inkscape:pageopacity="0.0"
      inkscape:pagecheckerboard="0"
      showgrid="true"
-     inkscape:zoom="6.1730422"
-     inkscape:cx="-3.6448803"
-     inkscape:cy="35.071848"
+     inkscape:zoom="0.77163028"
+     inkscape:cx="189.85777"
+     inkscape:cy="-95.252872"
      inkscape:window-width="2560"
      inkscape:window-height="1369"
      inkscape:window-x="-8"
@@ -39,65 +39,37 @@
      id="defs2" />
   <rect
      style="fill:currentColor;stroke-width:7.9375;stroke-linecap:round;stroke-opacity:0.03;stop-color:currentColor"
-     id="rect983"
+     id="rect934"
      width="5.2916665"
-     height="5.291667"
+     height="5.2916665"
      x="10.583333"
+     y="0" />
+  <rect
+     style="fill:currentColor;stroke-width:7.9375;stroke-linecap:round;stroke-opacity:0.03;stop-color:currentColor"
+     id="rect936"
+     width="15.875"
+     height="15.875"
+     x="5.2916665"
+     y="5.2916665" />
+  <rect
+     style="fill:currentColor;stroke-width:7.9375;stroke-linecap:round;stroke-opacity:0.03;stop-color:currentColor"
+     id="rect1040"
+     width="5.2916665"
+     height="5.2916665"
+     x="21.166666"
      y="10.583333" />
   <rect
      style="fill:currentColor;stroke-width:7.9375;stroke-linecap:round;stroke-opacity:0.03;stop-color:currentColor"
-     id="rect1595"
+     id="rect1042"
      width="5.2916665"
      height="5.2916665"
-     x="15.875"
-     y="5.2916665" />
-  <rect
-     style="fill:currentColor;stroke-width:7.9375;stroke-linecap:round;stroke-opacity:0.03;stop-color:currentColor"
-     id="rect1597"
-     width="5.2916665"
-     height="5.2916665"
-     x="5.2916665"
-     y="5.2916665" />
-  <rect
-     style="fill:currentColor;stroke-width:7.9375;stroke-linecap:round;stroke-opacity:0.03;stop-color:currentColor"
-     id="rect1599"
-     width="5.2916665"
-     height="5.2916665"
-     x="21.166666"
-     y="0" />
-  <rect
-     style="fill:currentColor;stroke-width:7.9375;stroke-linecap:round;stroke-opacity:0.03;stop-color:currentColor"
-     id="rect1601"
-     width="5.2916665"
-     height="5.2916665"
-     x="0"
-     y="0" />
-  <rect
-     style="fill:currentColor;stroke-width:7.9375;stroke-linecap:round;stroke-opacity:0.03;stop-color:currentColor"
-     id="rect1603"
-     width="5.2916665"
-     height="5.2916665"
-     x="15.875"
-     y="15.875" />
-  <rect
-     style="fill:currentColor;stroke-width:7.9375;stroke-linecap:round;stroke-opacity:0.03;stop-color:currentColor"
-     id="rect1605"
-     width="5.2916665"
-     height="5.2916665"
-     x="5.2916665"
-     y="15.875" />
-  <rect
-     style="fill:currentColor;stroke-width:7.9375;stroke-linecap:round;stroke-opacity:0.03;stop-color:currentColor"
-     id="rect1607"
-     width="5.2916665"
-     height="5.2916665"
-     x="0"
+     x="10.583333"
      y="21.166666" />
   <rect
      style="fill:currentColor;stroke-width:7.9375;stroke-linecap:round;stroke-opacity:0.03;stop-color:currentColor"
-     id="rect1609"
+     id="rect1044"
      width="5.2916665"
      height="5.2916665"
-     x="21.166666"
-     y="21.166666" />
+     x="0"
+     y="10.583333" />
 </svg>

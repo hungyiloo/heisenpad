@@ -1,17 +1,16 @@
 import { nanoid } from 'nanoid';
-import React, { useEffect, useMemo, useState } from 'react';
-import { useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import 'react-responsive-modal/styles.css';
 import { Route, Routes, useParams } from 'react-router-dom';
 import useWebSocket, { ReadyState } from 'react-use-websocket';
+import StringCrypto from 'string-crypto';
 import Bubble from './Bubble';
 import Button from './Button';
-import { TextArea } from './Input';
-import { welcomeMessage } from './welcome';
-import 'react-responsive-modal/styles.css';
-import StringCrypto from 'string-crypto';
 import { ChannelSwitcher } from './ChannelSwitcher';
+import useWindowSize from './hooks/useWindowSize';
+import { TextArea } from './Input';
 import { KeyManager } from './KeyManager';
-import { Modal } from 'react-responsive-modal';
+import { welcomeMessage } from './welcome';
 
 function App() {
   return <Routes>
@@ -27,6 +26,7 @@ function Chat() {
   const scrollerRef = useRef<HTMLDivElement>(null)
   const [chat, setChat] = useState<Message[]>([]);
   const [secretKey, setSecretKey] = useState("");
+  const [shouldConnect, setShouldConnect] = useState(true);
 
   const base = process.env.REACT_APP_WS_URL === '/'
     ? document.location.origin.replace("https:", "wss:").replace("http:", "ws:")
@@ -36,10 +36,11 @@ function Chat() {
     `${base}/ws/${channel}`,
     {
       shouldReconnect: () => true,
-      reconnectInterval: 1000,
-      reconnectAttempts: 10
+      onReconnectStop: () => setShouldConnect(false),
+      reconnectInterval: 3000,
+      reconnectAttempts: 3
     },
-    true
+    shouldConnect
   );
 
   useEffect(() => {
@@ -116,7 +117,9 @@ function Chat() {
     return () => {}
   }, [readyState]);
 
-  return <div className="flex justify-center">
+  const { height } = useWindowSize()
+
+  return <div className="flex justify-center" style={{ height }}>
     <div className="container flex flex-col h-screen px-2">
       <div className="flex flex-wrap items-center content-center pt-6 pb-0 px-2 border-b-4 border-zinc-800">
         <svg
@@ -128,7 +131,27 @@ function Chat() {
           HEISENPAD
         </div>
         <ChannelSwitcher channel={channel} />
-        <div className="ml-auto">
+        <div className="font-display ml-auto mb-4 text-xs">
+          {readyState === ReadyState.CLOSING
+            ? <span className="text-amber-500">
+              <DiamondIcon className="mr-2"/>
+              TERMINATING&hellip;
+            </span>
+            : readyState === ReadyState.CONNECTING
+              ? <span className="text-amber-500">
+                <DiamondIcon className="mr-2 animate-ping"/>
+                CONNECTING&hellip;
+              </span>
+              : readyState === ReadyState.UNINSTANTIATED || readyState === ReadyState.CLOSED
+                ? <span className="text-purple-600 cursor-pointer" onClick={() => setShouldConnect(true)}>
+                  <DiamondIcon className="mr-2"/>
+                  DISCONNECTED!
+                </span>
+                : <span className="text-cyan-500" title="Connected!">
+                  <DiamondIcon/>
+                </span>}
+        </div>
+        <div className="ml-6">
           <KeyManager secretKey={secretKey} onChange={setSecretKey} />
         </div>
       </div>
@@ -158,23 +181,16 @@ function Chat() {
             </Bubble>}
         </React.Fragment>)}
       </div>
-      <Editor onDone={put} />
+      <Editor onDone={put} disabled={readyState !== ReadyState.OPEN} />
     </div>
-    <Modal open={readyState !== ReadyState.OPEN} onClose={() => {}} closeIcon={<React.Fragment/>}>
-      <div className="font-display animate-pulse text-amber-500">
-        {readyState === ReadyState.CLOSING
-          ? "TERMINATING..."
-          : readyState === ReadyState.CONNECTING
-            ? "CONNECTING..."
-            : readyState === ReadyState.UNINSTANTIATED || readyState === ReadyState.CLOSED
-              ? "DISCONNECTED"
-              : "PLEASE WAIT..."}
-      </div>
-    </Modal>
   </div>
 }
 
-function Editor(props: { onDone: (value: string) => void }) {
+function DiamondIcon(props: { className?: string }) {
+  return <svg className={`inline-block align-baseline h-4 ${props.className}`} viewBox="0 0 100 100"><use xlinkHref="/diamond.svg#icon-diamond"/></svg>
+}
+
+function Editor(props: { onDone: (value: string) => void, disabled?: boolean }) {
   const [draft, setDraft] = useState("");
   const multiline = draft.includes("\n")
 
@@ -194,6 +210,7 @@ function Editor(props: { onDone: (value: string) => void }) {
         </div>}
       <TextArea
         value={draft}
+        disabled={props.disabled}
         onChange={e => setDraft(e.target.value)}
         onKeyDown={e => {
           // A hack to allow basic tab insertion in text editor
@@ -213,14 +230,14 @@ function Editor(props: { onDone: (value: string) => void }) {
           }
         }}
         rows={multiline ? 5 : 1}
-        placeholder="Type something..."
-        className="w-full" />
+        placeholder={props.disabled ? "You are disconnected!" : "Type something..."}
+        className={`w-full ${props.disabled ? 'cursor-not-allowed' : ''}`} />
     </div>
     <Button
       type="submit"
       className="ml-8"
       style={{ marginBottom: 6, height: "3.75rem" }}
-      disabled={!draft.trim()}
+      disabled={props.disabled || !draft.trim()}
       color="amber">
       SEND
     </Button>
