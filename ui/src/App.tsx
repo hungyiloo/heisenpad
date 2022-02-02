@@ -1,5 +1,5 @@
 import { nanoid } from 'nanoid';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import 'react-responsive-modal/styles.css';
 import { Route, Routes, useParams } from 'react-router-dom';
 import useWebSocket, { ReadyState } from 'react-use-websocket';
@@ -91,7 +91,7 @@ function Chat() {
     ]
   }, [secretKey, channel])
 
-  function send(cmd: Command) { sendMessage(JSON.stringify(cmd)); }
+  const send = useCallback((cmd: Command) => { sendMessage(JSON.stringify(cmd)); }, [sendMessage])
 
   function put(draft: string) {
     scrollChatToBottom(true)
@@ -114,7 +114,7 @@ function Chat() {
       return () => clearInterval(timer)
     }
     return () => {}
-  }, [readyState]);
+  }, [send, readyState]);
 
   const { height } = useWindowSize()
 
